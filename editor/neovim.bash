@@ -21,12 +21,4 @@ echo "Installing new config"
 mv "$CLONE_DIR" "$HOME/.config"
 echo "Done"
 
-echo "Installing omarchy theme"
-if [ -f "$HOME/.config/nvim/lua/plugins/theme.lua" ]; then
-    # Use omarchy theme plugin instead
-    rm "$HOME/.config/nvim/lua/plugins/theme.lua"    
-fi
-ln -s "$HOME/.config/omarchy/current/theme/neovim.lua" "$HOME/.config/nvim/lua/plugins/theme.lua"
-echo "Done"
-
 echo "Done setting up neovim config"
