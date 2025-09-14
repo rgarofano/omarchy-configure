@@ -29,6 +29,6 @@ bindd = SUPER SHIFT, slash, Show key bindings, exec, omarchy-menu-keybindings
 unbind = SUPER SHIFT CTRL, SPACE
 unbind = SUPER, T
 bindd = SUPER, T, Pick new theme, exec, omarchy-menu theme
-' >> $HOME/.config/hypr/bindings.conf
+' >> "$XDG_CONFIG_HOME/hypr/bindings.conf"
 
 echo "Done"

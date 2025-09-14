@@ -5,7 +5,7 @@ git clone https://github.com/rgarofano/nvim-config.git "$CLONE_DIR"
 
 echo "Clearing current config"
 
-rm -rf "$HOME/.config/nvim"
+rm -rf "$XDG_HOME_CONFIG/nvim"
 
 if [ -d "$HOME/.local/share/nvim" ]; then
     rm -rf "$HOME/.local/share/nvim"
@@ -18,7 +18,7 @@ fi
 echo "Done"
 
 echo "Installing new config"
-mv "$CLONE_DIR" "$HOME/.config"
+mv "$CLONE_DIR" "$XDG_HOME_CONFIG"
 echo "Done"
 
 echo "Done setting up neovim config"
