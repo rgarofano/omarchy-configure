@@ -11,6 +11,7 @@ source ./shell/zsh.bash
 source ./editor/neovim.bash
 source ./editor/lsp.bash
 source ./dev/ruby.bash
+source ./clean/remove_bloat.bash
 
 # These require user input
 source ./ssh/setup_ssh.bash
