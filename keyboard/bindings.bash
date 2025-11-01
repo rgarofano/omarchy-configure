@@ -2,10 +2,10 @@ echo "Adding custom bindings to hyprland config"
 
 echo '
 # Opening Applications
-unbind = SUPER, A
+unbind = SUPER SHIFT, A
 bindd = SUPER, A, Activity, exec, $terminal -e btop
-unbind = SUPER, C
-bindd = SUPER, C, ChatGPT, exec, omarchy-launch-webapp "https://chatgpt.com"
+unbind = SUPER SHIFT, C
+bindd = SUPER SHIFT, C, ChatGPT, exec, omarchy-launch-webapp "https://chatgpt.com"
 
 # Tiling
 bindd = SUPER, H, Move focus left, movefocus, l
@@ -27,8 +27,8 @@ bindd = SUPER SHIFT, slash, Show key bindings, exec, omarchy-menu-keybindings
 
 # Switch theme
 unbind = SUPER SHIFT CTRL, SPACE
-unbind = SUPER, T
-bindd = SUPER, T, Pick new theme, exec, omarchy-menu theme
+unbind = SUPER SHIFT, T
+bindd = SUPER SHIFT, T, Pick new theme, exec, omarchy-menu theme
 ' >> "$XDG_CONFIG_HOME/hypr/bindings.conf"
 
 echo "Done"
