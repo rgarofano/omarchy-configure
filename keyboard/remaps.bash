@@ -12,7 +12,3 @@ echo "Done"
 echo "Starting and enabling udevmon service"
 sudo systemctl enable --now udevmon
 echo "Done"
-
-echo "Swap left ALT and SUPER"
-sed -i 's/kb_options = compose:caps/kb_options = altwin:swap_lalt_lwin/g' "$XDG_CONFIG_HOME/hypr/input.conf"
-echo "Done"
