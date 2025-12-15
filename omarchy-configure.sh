@@ -1,0 +1,242 @@
+#!/usr/bin/env bash
+
+print_error() {
+    echo -e "\033[31m$1\033[0m" >&2
+}
+
+print_success() {
+    echo -e "\033[32m$1\033[0m"
+}
+
+prompt_to_continue() {
+    local task_desc="$1"
+    read -rp "Proceed with $task_desc? [Y/n] " proceed
+    if [[ $proceed == "" ]] || [[ $proceed =~ [yY] ]]; then
+        return 0
+    fi
+    return 1
+}
+
+install_packages() {
+    if sudo pacman -S --noconfirm --needed "$@"; then
+        return 0
+    fi
+    print_error "Failed to install package(s): $*"
+    exit 1
+}
+
+remove_packages() {
+    if sudo pacman -Rns --noconfirm "$@"; then
+        return 0
+    fi
+    print_error "Failed to remove package(s): $*"
+    exit 1
+}
+
+enable_services() {
+    if sudo systemctl enable --now "$@"; then
+        return 0
+    fi
+    print_error "Failed to enable service(s): $*"
+    exit 1
+}
+
+restart_services() {
+    if sudo systemctl restart "$@"; then
+        return 0
+    fi
+    print_error "Failed to restart service(s): $*"
+    exit 1
+}
+
+setup_keyboard() {
+    if prompt_to_continue "remapping Caps Lock to Esc"; then
+        install_packages keyd
+        enable_services keyd
+        sudo tee /etc/keyd/default.conf >/dev/null <<'EOF'
+[ids]
+*
+
+[main]
+capslock = esc
+EOF
+        restart_services keyd
+    fi
+}
+
+setup_editor() {
+    local config_url="https://github.com/rgarofano/nvim-config.git"
+    if prompt_to_continue "pulling neovim config from $config_url (this will delete all existing config)"; then
+        if [[ -d "$XDG_CONFIG_HOME/nvim/" ]]; then
+            rm -rf "$XDG_CONFIG_HOME/nvim/"
+        fi
+
+        if [ -d "$HOME/.local/share/nvim" ]; then
+            rm -rf "$HOME/.local/share/nvim"
+        fi
+
+        if [ -d "$HOME/.local/state/nvim" ]; then
+            rm -rf "$HOME/.local/state/nvim"
+        fi
+
+        git clone "$config_url" "$XDG_CONFIG_HOME/nvim/"
+    fi
+
+    if prompt_to_continue "installing lsp servers, linters, and formatters"; then
+        packages=(
+            "bash-language-server"
+            "shellcheck"
+            "shfmt"
+            "clang"
+            "jedi-language-server"
+            "lua-language-server"
+            "typescript-language-server"
+            "tailwindcss-language-server"
+        )
+        install_packages "${packages[@]}"
+    fi
+}
+
+setup_shell() {
+    if ! command -v fish >/dev/null 2>&1 && prompt_to_continue "setting fish as the default shell"; then
+        install_packages fish
+        sudo chsh -s "$(command -v fish)"
+    fi
+}
+
+setup_browser() {
+    if ! command -v librewolf >/dev/null 2>&1 && prompt_to_continue "installing librewolf browser"; then
+        yay -S --noconfirm librewolf-bin
+    fi
+}
+
+setup_window_manager() {
+    local config_path="$XDG_CONFIG_HOME/hypr/bindings.conf"
+    if [[ ! -f $config_path ]] || grep -q "BEGIN CUSTOM BINDINGS" "$config_path"; then
+        return 0
+    fi
+
+    cat >>"$config_path" <<'END CUSTOM BINDINGS'
+##### BEGIN CUSTOM BINDINGS #####
+# Tiling
+bindd = SUPER, H, Move focus left, movefocus, l
+unbind = SUPER, J
+bindd = SUPER, J, Move focus down, movefocus, d
+unbind = SUPER, K
+bindd = SUPER, K, Move focus up, movefocus, u
+bindd = SUPER, L, Move focus right, movefocus, r
+bindd = SUPER SHIFT, H, Expand window left, resizeactive, -100 0
+bindd = SUPER SHIFT, L, Expand window right, resizeactive, 100 0
+bindd = SUPER SHIFT, K, Shrink window up, resizeactive, 0 -100
+bindd = SUPER SHIFT, J, Expand window down, resizeactive, 0 100
+bindd = SUPER CTRL, J, Toggle split, togglesplit, # dwindle
+# Menus
+unbind = SUPER ALT, SPACE
+unbind = SUPER, SPACE
+bindd = SUPER, SPACE, Omarchy menu, exec, omarchy-menu
+bindd = ALT, SPACE, Launch apps, exec, omarchy-launch-walker
+bindd = SUPER SHIFT, slash, Show key bindings, exec, omarchy-menu-keybindings
+END CUSTOM BINDINGS
+}
+
+setup_autostart() {
+    local config_path="$XDG_CONFIG_HOME/hypr/autostart.conf"
+    if [[ ! -f $config_path ]]; then
+        return 0
+    fi
+
+    if prompt_to_continue "automatically starting programs in the desired workspace (overwrites $config_path)"; then
+        cat >"$config_path" <<'EOF'
+exec-once = hyprsunset
+exec-once = [workspace 1 silent] signal-desktop
+exec-once = [workspace 2 silent] librewolf
+exec-once = [workspace 3] omarchy-launch-editor
+EOF
+    fi
+}
+
+setup_blue_light_filter() {
+    local config_path="$XDG_CONFIG_HOME/hypr/hyprsunset.conf"
+    if [[ ! -f $config_path ]]; then
+        return 0
+    fi
+
+    if prompt_to_continue "applying a strong blue light filter at night (overwrites $config_path)"; then
+        cat >"$config_path" <<'EOF'
+profile {
+    time = 06:00
+    identity = true
+}
+
+profile {
+    time = 20:30
+    temperature = 1000
+    gamma = 0.5
+}
+EOF
+    fi
+}
+
+setup_ssh() {
+    mkdir -p "$HOME/.ssh/"
+    local keyfile="$HOME/.ssh/id_ed25519"
+    if [[ -f $keyfile ]]; then
+        echo "Skipping ssh key generation, as one already exists at $keyfile"
+    else
+        ssh-keygen -t ed25519 -f "$keyfile" -N "" -q
+        echo "Generated new ssh key at $keyfile"
+    fi
+}
+
+setup_github() {
+    # prerequisite
+    setup_ssh
+
+    if command -v gh >/dev/null 2>&1 && prompt_to_continue "adding ssh key to GitHub"; then
+        gh auth login
+    fi
+}
+
+remove_bloat() {
+    if prompt_to_continue "removing bloatware"; then
+        packages=(
+            "1password-beta"
+            "1password-cli"
+            "gnome-calculator"
+            "libreoffice-fresh"
+            "obsidian"
+            "xournalpp"
+            "blueberry"
+            "pinta"
+            "typora"
+        )
+        remove_packages "${packages[@]}"
+
+        webapps=(
+            "HEY"
+            "Basecamp"
+            "Google Photos"
+            "Google Contacts"
+            "Google Messages"
+            "Figma"
+            "Zoom"
+            "Discord"
+            "Spotify"
+        )
+        for webapp in "${webapps[@]}"; do
+            omarchy-webapp-remove "$webapp"
+        done
+    fi
+}
+
+setup_keyboard
+setup_editor
+setup_shell
+setup_browser
+setup_window_manager
+setup_autostart
+setup_blue_light_filter
+setup_github
+remove_bloat
+
+print_success "All steps completed"
