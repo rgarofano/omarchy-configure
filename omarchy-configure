@@ -118,6 +118,9 @@ setup_window_manager() {
 
     cat >>"$config_path" <<'END CUSTOM BINDINGS'
 ##### BEGIN CUSTOM BINDINGS #####
+# Kill windows with SUPER Q
+unbind = SUPER, W, Close window, killactive,
+bindd = SUPER, Q, Close window, killactive,
 # Tiling
 bindd = SUPER, H, Move focus left, movefocus, l
 unbind = SUPER, J
